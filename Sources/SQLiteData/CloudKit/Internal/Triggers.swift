@@ -156,12 +156,20 @@
         "\(String.sqliteDataCloudKitSchemaName)_after_delete_on_\(tableName)_from_user",
         ifNotExists: true,
         after: .delete { old in
-          checkWritePermissions(
-            alias: old,
-            parentForeignKey: parentForeignKey,
-            defaultZone: defaultZone,
-            privateTables: privateTables
-          )
+          if let parentForeignKey {
+            checkWritePermissions(
+              alias: old,
+              parentForeignKey: parentForeignKey,
+              defaultZone: defaultZone,
+              privateTables: privateTables
+            )
+          } else {
+            SyncMetadata
+              .where {
+                $0.recordPrimaryKey.eq(#sql("''", as: String.self))
+              }
+              .delete()
+          }
         } when: { _ in
           !SyncEngine.$isSynchronizing
         }
